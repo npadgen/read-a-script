@@ -1,4 +1,6 @@
 #!/usr/local/bin/python
+#
+# $Id$
 
 import os
 import re
@@ -226,12 +228,17 @@ def main():
         role = args.role[0].lower()
     else:
         role = '_no_role'
+    global VOICES
     if args.voices:
-        global VOICES
         if args.no_defaults:
             if args.debug: print "Ignoring default voices"
             VOICES = {}
         VOICES.update(json.load(args.voices[0]))
+    else:
+        default_voices = os.path.join(os.path.split(args.scriptfile.name)[0], 'voices.json')
+        if os.path.exists(default_voices):
+            print "No voices.json found, but I found one at {0}, which I'm loading".format(default_voices)
+            VOICES.update(json.load(open(default_voices)))
     speaker = LineSpeaker(role, quiet=args.quiet, debug=args.debug, speed=args.speed, mute=args.mute, clear=args.clear, scenes=args.scenes, voices=VOICES)
     if args.list:
         speaker.list_scenes_and_roles(args.scriptfile)
