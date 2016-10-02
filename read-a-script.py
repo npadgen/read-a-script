@@ -64,7 +64,7 @@ class LineSpeaker(object):
         
         self._rows, self._columns = map(int, os.popen('stty size', 'r').read().split())
         
-    DIALOGUE_RE = re.compile(r'^([A-Z\s_&]+):\s*(.*)')
+    DIALOGUE_RE = re.compile(r'^([A-Z\s_,&]+):\s*(.*)')
     
     @property
     def current_scene(self):
@@ -88,10 +88,11 @@ class LineSpeaker(object):
         matcher = self.DIALOGUE_RE.match(line)
         if matcher:
             role, line = matcher.groups()
+            role_to_speak = self.find_role_to_use(role)
             if self.debug:
                 print "=== {} === {}".format(role, line)
             if line.strip() == "":
-                self.speak_a_line(role.lower(), line)
+                self.speak_a_line(role.lower(), line, role_to_speak)
                 self._prev_role = role.upper()
             else:
                 for y in re.split(r'(\([^\(]*\))', line):
@@ -100,7 +101,7 @@ class LineSpeaker(object):
                         if y.startswith('('):
                             self.speak_a_line('stage directions', y)
                         else:
-                            self.speak_a_line(role.lower(), y)
+                            self.speak_a_line(role.lower(), y, role_to_speak)
                             self._prev_role = role.upper()
         else:
             self.perform_line('{}: {}'.format(self._prev_role, line))
@@ -120,15 +121,34 @@ class LineSpeaker(object):
             if line.startswith('{scene}'):
                 print "{0}: {1}".format(counter, line[7:].strip())
                 counter += 1
+    
+    def find_role_to_use(self, role):
+        if self.debug: print "=== find_role_to_use({0})".format(role)
+        # deal with multiple roles
+        roles = role.split(',')
+        roles = map(lambda x: x.lower().strip(), roles)
+        if self.role in roles and self.role in self._voices:
+            if self.debug: print "=== using {0}".format(self.role)
+            return self.role
+        else:
+            for r in roles:
+                if r in self._voices:
+                    if self.debug: print "=== using {0}".format(r)
+                    return r
+            else:
+                if self.debug: print "=== using {0}".format(None)
+                return None
 
-    def speak_a_line(self, role, line):
-        try:
-            voice = self._voices[role.lower()]
-        except KeyError:
-            voice = self._voices[None]
-            line = '{} says: {}'.format(role, line)
+    def speak_a_line(self, role, line, role_to_speak=None):
+        if role_to_speak is None:
+            role_to_speak = role
         if self.clear:
             subprocess.call(['/usr/bin/clear'])
+        if role_to_speak in self._voices:
+            voice = self._voices[role_to_speak]
+        else:
+            voice = self._voices[None]
+            line = '{} says: {}'.format(role, line)
         sys.stdout.write('\n{}\n'.format(role.upper()))
         if role == self.role and not self.mute:
             while True:
