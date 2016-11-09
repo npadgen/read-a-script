@@ -39,6 +39,20 @@ VOICES = {
     'single female voice': 'allison',
     }
 
+def mixrange(s):
+    """
+    Expand a range which looks like "1-3,6,8-10" to [1, 2, 3, 6, 8, 9, 10]
+    """
+    r = []
+    for i in s.split(','):
+        if '-' not in i:
+            r.append(int(i))
+        else:
+            l,h = map(int, i.split('-'))
+            r+= range(l,h+1)
+    return r
+
+
 class LineSpeaker(object):
 
     def __init__(self, role=None, debug=False, quiet=False, speed=150, mute=False, clear=False, scenes=[], voices={}):
@@ -50,7 +64,14 @@ class LineSpeaker(object):
             print "Speed = {}".format(speed)
         self.mute = mute
         self.clear = clear
-        self.scenes = [int(scene) for scene in scenes]
+#        self.scenes = [int(scene) for scene in scenes]
+        self.scenes = set()
+        for scene in scenes:
+            for num in mixrange(scene):
+                if self.debug: print "Adding scene {}".format(num)
+                self.scenes.add(num)
+        if self.debug:
+            print "Scenes: {}".format(self.scenes)
         self._prev_role = 'STAGE DIRECTIONS'
         self._current_scene = 0
         self._voices = {}
