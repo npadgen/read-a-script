@@ -64,7 +64,6 @@ class LineSpeaker(object):
             print "Speed = {}".format(speed)
         self.mute = mute
         self.clear = clear
-#        self.scenes = [int(scene) for scene in scenes]
         self.scenes = set()
         for scene in scenes:
             for num in mixrange(scene):
