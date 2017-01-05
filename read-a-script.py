@@ -55,7 +55,7 @@ def mixrange(s):
 
 class LineSpeaker(object):
 
-    def __init__(self, role=None, debug=False, quiet=False, speed=150, mute=False, clear=False, scenes=[], voices={}):
+    def __init__(self, role=None, debug=False, quiet=False, speed=150, mute=False, clear=False, scenes=[], voices={}, display_role=False):
         self.role = role
         self.debug = debug
         self.quiet = quiet
@@ -64,6 +64,7 @@ class LineSpeaker(object):
             print "Speed = {}".format(speed)
         self.mute = mute
         self.clear = clear
+        self.display_role = display_role
         self.scenes = set()
         for scene in scenes:
             for num in mixrange(scene):
@@ -171,6 +172,8 @@ class LineSpeaker(object):
             line = '{} says: {}'.format(role, line)
         sys.stdout.write('\n{}\n'.format(role.upper()))
         if role == self.role and not self.mute:
+            if self.display_role:
+                sys.stdout.write('{}\n'.format(textwrap.fill(line, self._columns)))
             while True:
                 sys.stdout.flush()
                 say_it = readchar.readchar().lower()
@@ -187,7 +190,8 @@ class LineSpeaker(object):
                         hint, line = re.split(r'\s+', line, 1)
                     else:
                         hint, line = line, None
-                    sys.stdout.write('{} '.format(hint))
+                    if not self.display_role:
+                        sys.stdout.write('{} '.format(hint))
                     self.vocalise(voice, hint, self.mute)
                     if line is None:
                         sys.stdout.write('\n')
@@ -196,7 +200,7 @@ class LineSpeaker(object):
                     break
         else:
             say_it = 'y'
-        if not (role == self.role and self.mute):
+        if not (role == self.role and (self.mute or self.display_role)):
             sys.stdout.write('{}\n'.format(textwrap.fill(line, self._columns)))
         if not say_it.lower().startswith('y'):
             return
@@ -254,6 +258,10 @@ def main():
                         default=[],
                         help='Only read the specified scene numbers'                        
     )
+    parser.add_argument('--display',
+                        action='store_true',
+                        help="Always display the role's line"
+                        )
     parser.add_argument('--list',
                         action="store_true",
                         help="List all known roles and all scenes by number and exit")
@@ -279,7 +287,16 @@ def main():
         if os.path.exists(default_voices):
             print "No voices.json found, but I found one at {0}, which I'm loading".format(default_voices)
             VOICES.update(json.load(open(default_voices)))
-    speaker = LineSpeaker(role, quiet=args.quiet, debug=args.debug, speed=args.speed, mute=args.mute, clear=args.clear, scenes=args.scenes, voices=VOICES)
+    speaker = LineSpeaker(role,
+        quiet=args.quiet,
+        debug=args.debug,
+        speed=args.speed,
+        mute=args.mute,
+        clear=args.clear,
+        scenes=args.scenes,
+        voices=VOICES,
+        display_role=args.display,
+        )
     if args.list:
         speaker.list_scenes_and_roles(args.scriptfile)
         return
