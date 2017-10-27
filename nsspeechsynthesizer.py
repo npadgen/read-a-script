@@ -34,10 +34,11 @@ ve = nssp.alloc().init()
 for voice in nssp.availableVoices():
    ve.setVoice_(voice)
    print(voice)
-   ve.startSpeakingString_(text)
-
-   while not ve.isSpeaking():
-      time.sleep(0.1)
-
-   while ve.isSpeaking():
-      time.sleep(0.1)
+#   ve.startSpeakingString_(text)
+#
+#   while not ve.isSpeaking():
+#      time.sleep(0.1)
+#
+#   while ve.isSpeaking():
+#      time.sleep(0.1)
+   print_and_say(text)
