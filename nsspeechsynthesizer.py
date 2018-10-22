@@ -2,7 +2,7 @@
 
 # https://stackoverflow.com/questions/12758591/python-text-to-speech-in-macintosh#12761406
 
-from  AppKit import NSSpeechSynthesizer
+from AppKit import NSSpeechSynthesizer
 import time
 import sys
 

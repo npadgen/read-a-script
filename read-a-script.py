@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/Users/neilp/.virtualenvs/read-a-script/bin/python
 #
 # $Id$
 
@@ -11,35 +11,14 @@ import readchar
 import textwrap
 import json
 import logging
+import yaml
 
 LOGGER = logging.getLogger('read-a-script')
 LOGGER.addHandler(logging.StreamHandler())
 
 VOICES = {
-    # Spring and Port Wine
-    'rafe': 'tom',
-    'arthur': 'lee',
-    'harold': 'daniel',
-    'wilfred': 'oliver',
-    'daisy': 'fiona',
-    'florence': 'kate',
-    'hilda': 'serena',
-    'betsy jane': 'karen',
     None: 'tom',
     'stage directions': 'moira',
-    'all': 'daniel',
-    # Joining The Club
-    'tom': 'tom',
-    'jenny': 'karen',
-    # The Pigeon with the Silver Foot
-    'waiter': 'luca',
-    'mary': 'kate',
-    'joanna': 'serena',
-    'bianca': 'karen',
-    'lover': 'lee',
-    'customer': 'alice',
-    'beggar': 'alice',
-    'single female voice': 'allison',
     }
 
 
@@ -303,7 +282,7 @@ def main():
     parser.add_argument('-v', '--voices',
                         type=argparse.FileType('r'),
                         nargs=1,
-                        help='JSON file containing voices')
+                        help='JSON or YAML file containing voices')
     parser.add_argument('-S', '--scene',
                         action='append',
                         dest='scenes',
@@ -336,12 +315,13 @@ def main():
         if args.no_defaults:
             LOGGER.debug("Ignoring default voices")
             VOICES = {}
-        VOICES.update(json.load(args.voices[0]))
+        VOICES.update(get_voices(args.voices[0]))
     else:
-        default_voices = os.path.join(os.path.split(args.scriptfile.name)[0], 'voices.json')
-        if os.path.exists(default_voices):
-            print("No voices.json found, but I found one at {0}, which I'm loading".format(default_voices))
-            VOICES.update(json.load(open(default_voices)))
+        for voicefile in ('voices.json', 'voices.yaml'):
+            default_voices = os.path.join(os.path.split(args.scriptfile.name)[0], voicefile)
+            if os.path.exists(default_voices):
+                print("Attempting to load voices file {0}".format(default_voices))
+                VOICES.update(get_voices(default_voices))
     if args.interactive:
         args = parser.parse_args(interactively_get_args(args.scriptfile))
     if args.role:
@@ -369,6 +349,12 @@ def main():
             speaker.perform_line('({})'.format(line[7:]))
         elif line != '':
             speaker.perform_line(line)
+
+def get_voices(voicefile):
+    try:
+        return json.load(open(voicefile))
+    except json.decoder.JSONDecodeError:
+        return yaml.load(open(voicefile))
 
 
 if __name__ == '__main__':
