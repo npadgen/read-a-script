@@ -21,6 +21,7 @@ voices:
   ELWOOD: Tom
   FATHER GERALD: Tom
 
-config:
+options:
   rate: 200
-  speak-action: true
+  speak-action: false
+  learning-method: PAUSE_AND_DISPLAY

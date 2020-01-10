@@ -1,23 +1,50 @@
 #!/usr/bin/env python3
 
 """Usage:
-  script_learner.py [-c CONFIG_FILE] [-d] [-q] [-L | -r ROLE]... [-s SCENES] SCRIPT_FILE
+  script_learner.py [-h] [-c CONFIG_FILE] [-dqLV] -r ROLE [-r ROLE]... [-s SCENES] SCRIPT_FILE
 
 Options:
-  -c CONFIG_FILE, --config CONFIG_FILE    Read additional configuration from CONFIG_FILE
+  -c CONFIG_FILE, --config CONFIG_FILE    Read additional configuration from CONFIG_FILE [default: ./config.yml]
+                                          If CONFIG_FILE does not exist, a default config will be used;
+                                          run this program with -h to see the default config.
   -d, --debug                             Produce additional output
+  -h, --help                              Document how to use this program
   -q, --quiet                             Produce minimal output
   -r ROLE, --role ROLE                    Role(s) to learn
-  -s SCENES, --scenes SCENES              Scene(s) to learn [default: "all"]
+  -s SCENES, --scenes SCENES              Scene(s) to learn [default: all]
   -L, --list-scenes                       List all the scenes and exit
+  -V, --list-voices                       List all known voices and exit
   SCRIPT_FILE                             The Fountain-formatted script file
 
 For more information about formatting SCRIPT_FILE, see http://fountain.io
+
+If the configuration file cannot be found, a default configuration will be used instead.
+The default configuration is:
+---
+voices:
+  BONES: Tom
+  KIRK: Alex
+  SPOCK: Fred
+  _DEFAULT: Daniel
+  _ACTION: Moira
+  
+options:
+  # the rate at which speech will be spoken
+  rate: 150
+  # whether to speak stage directions and parenthetical actions
+  speak-action: true
+  # how to display lines for learning: valid values are:
+  #  PAUSE_AND_DISPLAY
+  #  DISPLAY_AND_PAUSE
+  #  WAIT_FOR_INPUT
+  #  SPEAK_AND_DISPLAY
+  # or an integer from 1 to 4
+  learning-method: PAUSE_AND_DISPLAY
 """
 
 from utils import ElementType, mixrange
 from jouvence.parser import JouvenceParser
-from jouvence.renderer import BaseTextRenderer
+import enum
 import os
 import re
 import logging
@@ -29,11 +56,18 @@ import pyttsx3
 
 ACTION_CHARACTER = "_ACTION"
 DEFAULT_CHARACTER = "_DEFAULT"
-
+DEFAULT_CONFIG = __doc__.split("---\n")[1]
 LOGGER = logging.getLogger(sys.argv[0])
 LOGGER.addHandler(logging.StreamHandler())
 
 DEFAULT_VOICE = "Daniel"
+
+
+class LearningMethod(enum.Enum):
+    PAUSE_AND_DISPLAY = enum.auto()
+    DISPLAY_AND_PAUSE = enum.auto()
+    WAIT_FOR_INPUT = enum.auto()
+    SPEAK_AND_DISPLAY = enum.auto()
 
 
 class Actor:
@@ -53,16 +87,19 @@ class Actor:
         self.speak_line(line)
 
     def speak_line(self, line):
-        if self.role == ACTION_CHARACTER and not self.config["config"].get("speak-action", True):
+        if self.role == ACTION_CHARACTER and not self.config["options"].get("speak-action", True):
             return
         self.engine.setProperty("voice", self.voice.id)
         self.engine.say(line)
         self.engine.runAndWait()
 
-    def display_line(self, line):
-        if self.role is not None and self.role != ACTION_CHARACTER:
-            print(f"{self.role.upper()}: ", end="")
-        print(line)
+    def display_line(self, line, include_character=True):
+        if self.role is not None and self.role != ACTION_CHARACTER and include_character:
+            self.display_character()
+        print(line.strip() + "\n")
+
+    def display_character(self):
+        print(f"{self.role.upper()}: ", end="")
 
 
 class LearningActor(Actor):
@@ -76,6 +113,14 @@ class LearningActor(Actor):
     - it displays the line, then pauses for the length of time it would take for the line to be read;
     - or, it behaves exactly like an Actor.
     """
+
+    def __init__(self, *args, **kwargs):
+        super(LearningActor, self).__init__(*args, **kwargs)
+        lm = self.config["options"]["learning-method"]
+        try:
+            self.learning_method = LearningMethod[lm]
+        except KeyError:
+            self.learning_method = LearningMethod(int[lm])
 
     def silent_speak_line(self, line):
         """
@@ -91,21 +136,37 @@ class LearningActor(Actor):
         self.engine.setProperty("volume", volume)
 
     def speak_line(self, line):
-        return self.silent_speak_line(line)
+        if self.learning_method == LearningMethod.SPEAK_AND_DISPLAY:
+            return super().speak_line(line)
+        else:
+            return self.silent_speak_line(line)
 
     def read_line_pause_then_display(self, line):
+        self.display_character()
         self.silent_speak_line(line)
-        self.display_line(line)
+        self.display_line(line, include_character=False)
 
     def read_line_display_then_pause(self, line):
         self.display_line(line)
         self.silent_speak_line(line)
 
     def read_line_as_actor(self, line):
-        super().read_line(line)
+        super(LearningActor, self).read_line(line)
 
     def read_line_interactive(self, line):
         pass
+
+    def read_line(self, line):
+        if self.learning_method == LearningMethod.PAUSE_AND_DISPLAY:
+            self.read_line_pause_then_display(line)
+        elif self.learning_method == LearningMethod.DISPLAY_AND_PAUSE:
+            self.read_line_display_then_pause(line)
+        elif self.learning_method == LearningMethod.WAIT_FOR_INPUT:
+            self.read_line_interactive(line)
+        elif self.learning_method == LearningMethod.SPEAK_AND_DISPLAY:
+            self.read_line_as_actor(line)
+        else:
+            LOGGER.warning(f"Unknown learning method {self.learning_method}!")
 
 
 class ScriptReciter:
@@ -119,8 +180,8 @@ class ScriptReciter:
         self.current_actor = None
 
         self.engine: pyttsx3.Engine = pyttsx3.init()
-        if "rate" in self.config["config"]:
-            self.engine.setProperty("rate", int(self.config["config"]["rate"]))
+        if "rate" in self.config["options"]:
+            self.engine.setProperty("rate", int(self.config["options"]["rate"]))
         self.voices = dict(
             (v.name.capitalize(), v) for v in self.engine.getProperty("voices")
         )
@@ -140,7 +201,9 @@ class ScriptReciter:
             print("{:-8d}: {}".format(i, scene.header))
 
     def list_voices(self):
-        print("Known voices: " + ", ".join(self.voices.keys()))
+        print("Known voices: ")
+        for voice in self.voices.values():
+            print(f"\t{voice.name} ({', '.join(voice.languages)})")
 
     def learn_scene(self, scene):
         self.current_actor = self.get_actor(ACTION_CHARACTER)
@@ -196,18 +259,21 @@ class ScriptReciter:
 
 def main():
     opts = docopt.docopt(__doc__, sys.argv[1:])
-    if "-c" in opts:
-        config = YAML().load(open(opts["-c"]).read())
+
+    if "--config" in opts and os.path.exists(opts["--config"]):
+        config = YAML().load(open(opts["--config"]).read())
     else:
-        config = YAML().load(open("config.yml").read())
+        config = YAML().load(DEFAULT_CONFIG)
 
     if DEFAULT_CHARACTER in config["voices"]:
         global DEFAULT_VOICE
         DEFAULT_VOICE = config["voices"][DEFAULT_CHARACTER]
-    learner = ScriptReciter(opts["SCRIPT_FILE"], opts.get("-r", ["nobody"]), config)
+    learner = ScriptReciter(opts["SCRIPT_FILE"], opts["--role"], config)
 
     if opts["--list-scenes"]:
         learner.list_scenes()
+    elif opts["--list-voices"]:
+        learner.list_voices()
     elif opts["--scenes"] == "all":
         learner.learn()
     else:
