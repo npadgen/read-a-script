@@ -99,7 +99,7 @@ class Actor:
         print(line.strip() + "\n")
 
     def display_character(self):
-        print(f"{self.role.upper()}: ", end="")
+        print(f"{self.role.upper()}: ", end="", flush=True)
 
 
 class LearningActor(Actor):
