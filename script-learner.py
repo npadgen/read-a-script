@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 
 """Usage:
-  script_learner.py [-c CONFIG_FILE] [-d] [-q] -r ROLE [-r ROLE ... ] SCRIPT_FILE
+  script_learner.py [-c CONFIG_FILE] [-d] [-q] [-L | -r ROLE]... [-s SCENES] SCRIPT_FILE
 
 Options:
   -c CONFIG_FILE, --config CONFIG_FILE    Read additional configuration from CONFIG_FILE
   -d, --debug                             Produce additional output
   -q, --quiet                             Produce minimal output
-  -r ROLE                                 Role(s) to learn
+  -r ROLE, --role ROLE                    Role(s) to learn
+  -s SCENES, --scenes SCENES              Scene(s) to learn [default: "all"]
+  -L, --list-scenes                       List all the scenes and exit
   SCRIPT_FILE                             The Fountain-formatted script file
 
 For more information about formatting SCRIPT_FILE, see http://fountain.io
@@ -76,6 +78,11 @@ class LearningActor(Actor):
     """
 
     def silent_speak_line(self, line):
+        """
+        Same as speak_line but mutes the volume - so it effectively pauses for the right length of time.
+        :param line:
+        :return:
+        """
         self.engine.setProperty("voice", self.voice.id)
         volume = self.engine.getProperty("volume")
         self.engine.setProperty("volume", 0)
@@ -85,6 +92,20 @@ class LearningActor(Actor):
 
     def speak_line(self, line):
         return self.silent_speak_line(line)
+
+    def read_line_pause_then_display(self, line):
+        self.silent_speak_line(line)
+        self.display_line(line)
+
+    def read_line_display_then_pause(self, line):
+        self.display_line(line)
+        self.silent_speak_line(line)
+
+    def read_line_as_actor(self, line):
+        super().read_line(line)
+
+    def read_line_interactive(self, line):
+        pass
 
 
 class ScriptReciter:
@@ -103,13 +124,23 @@ class ScriptReciter:
         self.voices = dict(
             (v.name.capitalize(), v) for v in self.engine.getProperty("voices")
         )
-        print("Known voices: " + ", ".join(self.voices.keys()))
-        print("You are learning: " + ", ".join(roles))
         self.actors = {}
 
-    def learn(self):
-        for scene in self.d.scenes:
+    def learn(self, scenes=None):
+        print("You are learning: " + ", ".join(self.roles))
+        if scenes is None:
+            scenes = self.d.scenes
+        else:
+            scenes = [self.d.scenes[i-1] for i in scenes]
+        for scene in scenes:
             self.learn_scene(scene)
+
+    def list_scenes(self):
+        for i, scene in enumerate(self.d.scenes, 1):
+            print("{:-8d}: {}".format(i, scene.header))
+
+    def list_voices(self):
+        print("Known voices: " + ", ".join(self.voices.keys()))
 
     def learn_scene(self, scene):
         self.current_actor = self.get_actor(ACTION_CHARACTER)
@@ -169,11 +200,18 @@ def main():
         config = YAML().load(open(opts["-c"]).read())
     else:
         config = YAML().load(open("config.yml").read())
+
     if DEFAULT_CHARACTER in config["voices"]:
         global DEFAULT_VOICE
         DEFAULT_VOICE = config["voices"][DEFAULT_CHARACTER]
-    learner = ScriptReciter(opts["SCRIPT_FILE"], opts["-r"], config)
-    learner.learn()
+    learner = ScriptReciter(opts["SCRIPT_FILE"], opts.get("-r", ["nobody"]), config)
+
+    if opts["--list-scenes"]:
+        learner.list_scenes()
+    elif opts["--scenes"] == "all":
+        learner.learn()
+    else:
+        learner.learn(mixrange(opts["--scenes"]))
 
 
 if __name__ == "__main__":
