@@ -88,14 +88,20 @@ class Actor:
         self.speak_line(line)
 
     def speak_line(self, line):
-        if self.role == ACTION_CHARACTER and not self.config["options"].get("speak-action", True):
+        if self.role == ACTION_CHARACTER and not self.config["options"].get(
+            "speak-action", True
+        ):
             return
         self.engine.setProperty("voice", self.voice.id)
         self.engine.say(line)
         self.engine.runAndWait()
 
     def display_line(self, line, include_character=True):
-        if self.role is not None and self.role != ACTION_CHARACTER and include_character:
+        if (
+            self.role is not None
+            and self.role != ACTION_CHARACTER
+            and include_character
+        ):
             self.display_character()
         print(line.strip() + "\n")
 
@@ -231,7 +237,7 @@ class ScriptReciter:
         if scenes is None:
             scenes = self.d.scenes
         else:
-            scenes = [self.d.scenes[i-1] for i in scenes]
+            scenes = [self.d.scenes[i - 1] for i in scenes]
         for scene in scenes:
             self.learn_scene(scene)
 
