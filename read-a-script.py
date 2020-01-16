@@ -12,62 +12,51 @@ import textwrap
 import json
 import logging
 
-LOGGER = logging.getLogger('read-a-script')
+from utils import mixrange
+
+LOGGER = logging.getLogger("read-a-script")
 LOGGER.addHandler(logging.StreamHandler())
 
 VOICES = {
     # Spring and Port Wine
-    'rafe': 'tom',
-    'arthur': 'lee',
-    'harold': 'daniel',
-    'wilfred': 'oliver',
-    'daisy': 'fiona',
-    'florence': 'kate',
-    'hilda': 'serena',
-    'betsy jane': 'karen',
-    None: 'tom',
-    'stage directions': 'moira',
-    'all': 'daniel',
+    "rafe": "tom",
+    "arthur": "lee",
+    "harold": "daniel",
+    "wilfred": "oliver",
+    "daisy": "fiona",
+    "florence": "kate",
+    "hilda": "serena",
+    "betsy jane": "karen",
+    None: "tom",
+    "stage directions": "moira",
+    "all": "daniel",
     # Joining The Club
-    'tom': 'tom',
-    'jenny': 'karen',
+    "tom": "tom",
+    "jenny": "karen",
     # The Pigeon with the Silver Foot
-    'waiter': 'luca',
-    'mary': 'kate',
-    'joanna': 'serena',
-    'bianca': 'karen',
-    'lover': 'lee',
-    'customer': 'alice',
-    'beggar': 'alice',
-    'single female voice': 'allison',
-    }
-
-
-def mixrange(s):
-    """
-    Expand a range which looks like "1-3,6,8-10" to [1, 2, 3, 6, 8, 9, 10]
-    """
-    r = []
-    for i in s.split(','):
-        if '-' not in i:
-            r.append(int(i))
-        else:
-            l, h = list(map(int, i.split('-')))
-            r += list(range(l, h+1))
-    return r
+    "waiter": "luca",
+    "mary": "kate",
+    "joanna": "serena",
+    "bianca": "karen",
+    "lover": "lee",
+    "customer": "alice",
+    "beggar": "alice",
+    "single female voice": "allison",
+}
 
 
 class LineSpeaker(object):
-
-    def __init__(self,
-                 role=None,
-                 debug=False,
-                 quiet=False,
-                 speed=150,
-                 mute=False,
-                 clear=False,
-                 scenes=(),
-                 display_role=False):
+    def __init__(
+        self,
+        role=None,
+        debug=False,
+        quiet=False,
+        speed=150,
+        mute=False,
+        clear=False,
+        scenes=(),
+        display_role=False,
+    ):
         self.role = role
         if debug:
             LOGGER.setLevel(logging.DEBUG)
@@ -83,7 +72,7 @@ class LineSpeaker(object):
                 LOGGER.debug("Adding scene {}".format(num))
                 self.scenes.add(num)
         LOGGER.debug("Scenes: {}".format(self.scenes))
-        self._prev_role = 'STAGE DIRECTIONS'
+        self._prev_role = "STAGE DIRECTIONS"
         self._current_scene = 0
         self._voices = {}
         for k, v in VOICES.items():
@@ -92,12 +81,14 @@ class LineSpeaker(object):
             except AttributeError:
                 self._voices[k] = v
         if None not in self._voices:
-            self._voices[None] = 'tom'
-        
-        self._rows, self._columns = list(map(int, os.popen('stty size', 'r').read().split()))
-        
-    DIALOGUE_RE = re.compile(r'^([A-Z\s_,\'ac&]+):\s*(.*)')
-    
+            self._voices[None] = "tom"
+
+        self._rows, self._columns = list(
+            map(int, os.popen("stty size", "r").read().split())
+        )
+
+    DIALOGUE_RE = re.compile(r"^([A-Z\s_,\'ac&]+):\s*(.*)")
+
     @property
     def current_scene(self):
         return self._current_scene
@@ -106,13 +97,15 @@ class LineSpeaker(object):
     def current_scene(self, value):
         LOGGER.debug("=== setting current scene to {}".format(value))
         self._current_scene = value
-            
+
     def next_scene(self):
         self.current_scene += 1
 
     def perform_line(self, line):
         if self.scenes and self.current_scene not in self.scenes:
-            LOGGER.debug("=== skipping (not in scene {}): {}".format(self.current_scene, line))
+            LOGGER.debug(
+                "=== skipping (not in scene {}): {}".format(self.current_scene, line)
+            )
             return
         LOGGER.debug("=== perform_line({})".format(line))
         matcher = self.DIALOGUE_RE.match(line)
@@ -124,39 +117,43 @@ class LineSpeaker(object):
                 self.speak_a_line(role.lower(), line, role_to_speak)
                 self._prev_role = role.upper()
             else:
-                for y in re.split(r'(\([^(]*\))', line):
+                for y in re.split(r"(\([^(]*\))", line):
                     y = y.strip()
-                    if y != '':
-                        if y.startswith('('):
-                            self.speak_a_line('stage directions', y)
+                    if y != "":
+                        if y.startswith("("):
+                            self.speak_a_line("stage directions", y)
                         else:
                             self.speak_a_line(role.lower(), y, role_to_speak)
                             self._prev_role = role.upper()
         else:
-            self.perform_line('{}: {}'.format(self._prev_role, line))
-            
+            self.perform_line("{}: {}".format(self._prev_role, line))
+
     def list_scenes_and_roles(self, scriptfile):
         print("\nROLES:\n")
         LOGGER.debug(self._voices)
-        for role in sorted(self._voices.keys(),
-                           key=lambda x: x if isinstance(x, str) else chr(sys.maxunicode)):
+        for role in sorted(
+            self._voices.keys(),
+            key=lambda x: x if isinstance(x, str) else chr(sys.maxunicode),
+        ):
             if role:
-                print("{0}: {1}{2}".format(
-                    role.upper(),
-                    self._voices[role][0].upper(),
-                    self._voices[role][1:].lower(),
-                ))
+                print(
+                    "{0}: {1}{2}".format(
+                        role.upper(),
+                        self._voices[role][0].upper(),
+                        self._voices[role][1:].lower(),
+                    )
+                )
         print("\nSCENES:\n")
         counter = 1
         for line in scriptfile:
-            if line.startswith('{scene}'):
+            if line.startswith("{scene}"):
                 print("{0}: {1}".format(counter, line[7:].strip()))
                 counter += 1
-    
+
     def find_role_to_use(self, role):
         LOGGER.debug("=== find_role_to_use({0})".format(role))
         # deal with multiple roles
-        roles = role.split(',')
+        roles = role.split(",")
         roles = [x.lower().strip() for x in roles]
         if self.role in roles and self.role in self._voices:
             LOGGER.debug("=== using {0}".format(self.role))
@@ -174,67 +171,77 @@ class LineSpeaker(object):
         if role_to_speak is None:
             role_to_speak = role
         if self.clear:
-            subprocess.call(['/usr/bin/clear'])
+            subprocess.call(["/usr/bin/clear"])
         if role_to_speak in self._voices:
             voice = self._voices[role_to_speak]
         else:
             voice = self._voices[None]
-            line = '{} says: {}'.format(role, line)
-        sys.stdout.write('\n{}\n'.format(role.upper()))
+            line = "{} says: {}".format(role, line)
+        sys.stdout.write("\n{}\n".format(role.upper()))
         if role == self.role and not self.mute:
             if self.display_role:
-                sys.stdout.write('{}\n'.format(textwrap.fill(line, self._columns)))
+                sys.stdout.write("{}\n".format(textwrap.fill(line, self._columns)))
             while True:
                 sys.stdout.flush()
                 say_it = readchar.readchar().lower()
                 LOGGER.debug(">>>{}<<<".format(say_it))
-                if say_it == '\x03':
+                if say_it == "\x03":
                     raise KeyboardInterrupt
-                elif say_it == '\x04':
+                elif say_it == "\x04":
                     raise EOFError
-                elif say_it == '?':
-                    sys.stdout.write('  Hit H for a hint, Y to read the whole line,\n'
-                                     '  Ctrl-C or Ctrl-D to exit, or any key to move on to the next line\n')
-                elif say_it == 'h':
-                    if ' ' in line:
-                        hint, line = re.split(r'\s+', line, 1)
+                elif say_it == "?":
+                    sys.stdout.write(
+                        "  Hit H for a hint, Y to read the whole line,\n"
+                        "  Ctrl-C or Ctrl-D to exit, or any key to move on to the next line\n"
+                    )
+                elif say_it == "h":
+                    if " " in line:
+                        hint, line = re.split(r"\s+", line, 1)
                     else:
                         hint, line = line, None
                     if not self.display_role:
-                        sys.stdout.write('{} '.format(hint))
+                        sys.stdout.write("{} ".format(hint))
                     self.vocalise(voice, hint, self.mute)
                     if line is None:
-                        sys.stdout.write('\n')
+                        sys.stdout.write("\n")
                         return
                 else:
                     break
         else:
-            say_it = 'y'
+            say_it = "y"
         if not (role == self.role and (self.mute or self.display_role)):
-            sys.stdout.write('{}\n'.format(textwrap.fill(line, self._columns)))
-        if not say_it.lower().startswith('y'):
+            sys.stdout.write("{}\n".format(textwrap.fill(line, self._columns)))
+        if not say_it.lower().startswith("y"):
             return
         self.vocalise(voice, line, mute=(self.mute and role == self.role))
-            
+
     def vocalise(self, voice, line, mute):
         if self.quiet:
             LOGGER.debug("--- say -v {} {}".format(voice, line))
         else:
             if mute:
-                subprocess.call(['/usr/bin/osascript', '-e', 'set volume output muted true'])
-                subprocess.call(['/usr/bin/say',
-                                 '-v', voice,
-                                 '-r', "150",
-                                 '--interactive',
-                                 line])
-                subprocess.call(['/usr/bin/osascript', '-e', 'set volume output muted false'])
+                subprocess.call(
+                    ["/usr/bin/osascript", "-e", "set volume output muted true"]
+                )
+                subprocess.call(
+                    ["/usr/bin/say", "-v", voice, "-r", "150", "--interactive", line]
+                )
+                subprocess.call(
+                    ["/usr/bin/osascript", "-e", "set volume output muted false"]
+                )
             else:
-                subprocess.call(['/usr/bin/say',
-                                 '-v', voice,
-                                 '-r', str(self.speed),
-                                 textwrap.fill(line, self._columns)])
-    
-    
+                subprocess.call(
+                    [
+                        "/usr/bin/say",
+                        "-v",
+                        voice,
+                        "-r",
+                        str(self.speed),
+                        textwrap.fill(line, self._columns),
+                    ]
+                )
+
+
 def interactively_get_args(scriptfile):
     """
     It's too hard to remember all these arguments. Let the program do the heavy lifting.
@@ -244,89 +251,103 @@ def interactively_get_args(scriptfile):
     role = None
     while not role:
         role = input("Which role are you learning? ")
-    args = ['-r', role]
+    args = ["-r", role]
     no_arg_opts = [
         ["Suppress audio output", "-q"],
         ["Produce debugging output", "-d"],
         ["Mute while delivering the role's line", "-m"],
         ["Clear the screen before each line", "-c"],
-        ["Always display the role's line", "--display"]
+        ["Always display the role's line", "--display"],
     ]
     for opt in no_arg_opts:
         val = input("{0}? [y|n, default=n] ".format(opt[0])).lower()
         if val and val[0] == "y":
             args.append(opt[1])
-    speed = input('Spoken audio speed (wpm)? [default=180]')
+    speed = input("Spoken audio speed (wpm)? [default=180]")
     if speed:
-        args.extend(['-s', int(speed)])
+        args.extend(["-s", int(speed)])
     print()
     print("I know the following scenes:")
     speaker = LineSpeaker(role)
     speaker.list_scenes_and_roles(scriptfile)
     print()
     print("Which scenes would you like to rehearse?")
-    scenes = input("Enter a set of scene numbers, such as 1,2,4-6 [default=all scenes]: ")
+    scenes = input(
+        "Enter a set of scene numbers, such as 1,2,4-6 [default=all scenes]: "
+    )
     if scenes:
-        args.extend(['--scene', scenes])
+        args.extend(["--scene", scenes])
     print()
     print("Thank you.  Next time you could skip this introduction by just running:")
-    print("  {0} {1}".format(
-        sys.argv[0],
-        ' '.join(args),
-    ))
+    print("  {0} {1}".format(sys.argv[0], " ".join(args),))
     args.append(scriptfile.name)
     return args
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Learn a script')
-    parser.add_argument('-r', '--role', metavar='ROLE',
-                        type=str,
-                        nargs=1,
-                        help='Role you are learning')
-    parser.add_argument('-q', '--quiet',
-                        action='store_true',
-                        help="Don't produce any audio output")
-    parser.add_argument('-d', '--debug',
-                        action='store_true',
-                        help="Debugging output on")
-    parser.add_argument('-s', '--speed', metavar='SPEED',
-                        type=int,
-                        default=180,
-                        help="Speed of speech in wpm (default=180)")
-    parser.add_argument('-m', '--mute',
-                        action='store_true',
-                        help="Mute while delivering the role's line, rather than pausing")
-    parser.add_argument('-c', '--clear',
-                        action="store_true",
-                        help="Clear the screen before each line")
-    parser.add_argument('-v', '--voices',
-                        type=argparse.FileType('r'),
-                        nargs=1,
-                        help='JSON file containing voices')
-    parser.add_argument('-S', '--scene',
-                        action='append',
-                        dest='scenes',
-                        default=[],
-                        help='Only read the specified scene numbers'                        
-                        )
-    parser.add_argument('--display',
-                        action='store_true',
-                        help="Always display the role's line"
-                        )
-    parser.add_argument('--list',
-                        action="store_true",
-                        help="List all known roles and all scenes by number and exit")
-    parser.add_argument('-x', '--no-defaults',
-                        action="store_true",
-                        help="Ignore defaults; take all arguments from command line "
-                             "(NB: your voices definition file must include a definition for 'STAGE DIRECTIONS')")
-    parser.add_argument('-i', '--interactive',
-                        action="store_true",
-                        help="Interactively set options")
-    parser.add_argument('scriptfile',
-                        type=argparse.FileType('r'),
-                        help="File containing the script")
+    parser = argparse.ArgumentParser(description="Learn a script")
+    parser.add_argument(
+        "-r", "--role", metavar="ROLE", type=str, nargs=1, help="Role you are learning"
+    )
+    parser.add_argument(
+        "-q", "--quiet", action="store_true", help="Don't produce any audio output"
+    )
+    parser.add_argument(
+        "-d", "--debug", action="store_true", help="Debugging output on"
+    )
+    parser.add_argument(
+        "-s",
+        "--speed",
+        metavar="SPEED",
+        type=int,
+        default=180,
+        help="Speed of speech in wpm (default=180)",
+    )
+    parser.add_argument(
+        "-m",
+        "--mute",
+        action="store_true",
+        help="Mute while delivering the role's line, rather than pausing",
+    )
+    parser.add_argument(
+        "-c", "--clear", action="store_true", help="Clear the screen before each line"
+    )
+    parser.add_argument(
+        "-v",
+        "--voices",
+        type=argparse.FileType("r"),
+        nargs=1,
+        help="JSON file containing voices",
+    )
+    parser.add_argument(
+        "-S",
+        "--scene",
+        action="append",
+        dest="scenes",
+        default=[],
+        help="Only read the specified scene numbers",
+    )
+    parser.add_argument(
+        "--display", action="store_true", help="Always display the role's line"
+    )
+    parser.add_argument(
+        "--list",
+        action="store_true",
+        help="List all known roles and all scenes by number and exit",
+    )
+    parser.add_argument(
+        "-x",
+        "--no-defaults",
+        action="store_true",
+        help="Ignore defaults; take all arguments from command line "
+        "(NB: your voices definition file must include a definition for 'STAGE DIRECTIONS')",
+    )
+    parser.add_argument(
+        "-i", "--interactive", action="store_true", help="Interactively set options"
+    )
+    parser.add_argument(
+        "scriptfile", type=argparse.FileType("r"), help="File containing the script"
+    )
     args = parser.parse_args()
     if args.debug:
         LOGGER.setLevel(logging.DEBUG)
@@ -338,38 +359,45 @@ def main():
             VOICES = {}
         VOICES.update(json.load(args.voices[0]))
     else:
-        default_voices = os.path.join(os.path.split(args.scriptfile.name)[0], 'voices.json')
+        default_voices = os.path.join(
+            os.path.split(args.scriptfile.name)[0], "voices.json"
+        )
         if os.path.exists(default_voices):
-            print("No voices.json found, but I found one at {0}, which I'm loading".format(default_voices))
+            print(
+                "No voices.json found, but I found one at {0}, which I'm loading".format(
+                    default_voices
+                )
+            )
             VOICES.update(json.load(open(default_voices)))
     if args.interactive:
         args = parser.parse_args(interactively_get_args(args.scriptfile))
     if args.role:
         role = args.role[0].lower()
     else:
-        role = '_no_role'
-    speaker = LineSpeaker(role,
-                          quiet=args.quiet,
-                          debug=args.debug,
-                          speed=args.speed,
-                          mute=args.mute,
-                          clear=args.clear,
-                          scenes=args.scenes,
-                          # voices=VOICES,
-                          display_role=args.display,
-                          )
+        role = "_no_role"
+    speaker = LineSpeaker(
+        role,
+        quiet=args.quiet,
+        debug=args.debug,
+        speed=args.speed,
+        mute=args.mute,
+        clear=args.clear,
+        scenes=args.scenes,
+        # voices=VOICES,
+        display_role=args.display,
+    )
     if args.list:
         speaker.list_scenes_and_roles(args.scriptfile)
         return
     print("You are learning {}".format(role))
     for line in args.scriptfile:
         line = line.strip()
-        if line.startswith('{scene}'):
+        if line.startswith("{scene}"):
             speaker.next_scene()
-            speaker.perform_line('({})'.format(line[7:]))
-        elif line != '':
+            speaker.perform_line("({})".format(line[7:]))
+        elif line != "":
             speaker.perform_line(line)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

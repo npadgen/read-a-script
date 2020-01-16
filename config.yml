@@ -1,0 +1,27 @@
+voices:
+  _ACTION: Moira
+  _DEFAULT: Moira
+
+  CHARLES: Daniel
+  KONRAD: Yannick
+
+  MRS MCKNIGHT: Samantha
+  VALERIE: Samantha
+
+  MADAME OKARMA: Susan
+  HENRI: Susan
+
+  EVELYN: Ava
+  MCKENZIE: Ava
+
+  WILLY: Alex
+  ERNIE: Alex
+  ERNIE'S VOICE: Alex
+
+  ELWOOD: Tom
+  FATHER GERALD: Tom
+
+options:
+  rate: 200
+  speak-action: false
+  learning-method: WAIT_FOR_INPUT
