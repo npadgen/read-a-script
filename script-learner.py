@@ -47,6 +47,7 @@ from jouvence.parser import JouvenceParser
 import enum
 import os
 import re
+import readchar
 import logging
 import subprocess
 import docopt
@@ -121,6 +122,8 @@ class LearningActor(Actor):
             self.learning_method = LearningMethod[lm]
         except KeyError:
             self.learning_method = LearningMethod(int[lm])
+        if self.learning_method == LearningMethod.WAIT_FOR_INPUT:
+            self.print_help_interactive()
 
     def silent_speak_line(self, line):
         """
@@ -154,7 +157,43 @@ class LearningActor(Actor):
         super(LearningActor, self).read_line(line)
 
     def read_line_interactive(self, line):
-        pass
+        self.engine.setProperty("voice", self.voice.id)
+        self.display_character()
+        while True:
+            sys.stdout.flush()
+            say_it = readchar.readchar().lower()
+            if say_it == "\x03":
+                raise KeyboardInterrupt
+            elif say_it == "\x04":
+                raise EOFError
+            elif say_it == "h":
+                if " " in line:
+                    hint, line = re.split(r"\s+", line, 1)
+                else:
+                    hint, line = line, None
+                self.engine.say(hint)
+                self.engine.runAndWait()
+                sys.stdout.write(hint + " ")
+                sys.stdout.flush()
+                if line is None:
+                    sys.stdout.write("\n")
+                    return
+            elif say_it == " " or say_it == "n":
+                print(line)
+                return
+            elif say_it == "\x013" or say_it == "y":
+                print(line)
+                self.engine.say(line)
+                self.engine.runAndWait()
+                return
+            else:
+                self.print_help_interactive()
+
+    def print_help_interactive(self):
+        print()
+        print("  Hit H for a hint, enter or Y to read the whole line,")
+        print("  space or N to skip to the next line without reading,")
+        print("  or Ctrl-C or Ctrl-D to exit")
 
     def read_line(self, line):
         if self.learning_method == LearningMethod.PAUSE_AND_DISPLAY:

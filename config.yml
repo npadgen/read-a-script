@@ -24,4 +24,4 @@ voices:
 options:
   rate: 200
   speak-action: false
-  learning-method: PAUSE_AND_DISPLAY
+  learning-method: WAIT_FOR_INPUT
