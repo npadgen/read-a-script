@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "read-a-script"
+version = "0.1.0"
+description = "Mac: Read a play script in various voices, to help with line learning."
+authors = ["Neil Padgen <neil.padgen@gmail.com>"]
+license = "BSD"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+readchar = "^2.0.1"
+Jouvence = "^0.4.2"
+docopt = "^0.6.2"
+"ruamel.yaml" = "^0.16.12"
+pyttsx3 = "^2.90"
+
+[tool.poetry.dev-dependencies]
+ipython = "^7.19.0"
+jupyter = "^1.0.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
