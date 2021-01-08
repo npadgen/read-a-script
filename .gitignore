@@ -1,3 +1,4 @@
 read-a-script
 .idea
 .venv
+__pycache__
