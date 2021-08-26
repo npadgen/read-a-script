@@ -42,7 +42,7 @@ options:
   learning-method: PAUSE_AND_DISPLAY
 """
 
-from utils import ElementType, mixrange
+from .utils import ElementType, mixrange
 from jouvence.parser import JouvenceParser
 import enum
 import os
@@ -218,7 +218,7 @@ class ScriptReciter:
     def __init__(self, script_file, roles, config):
         self.parser = JouvenceParser()
         self.d = self.parser.parse(script_file)
-        self.roles = roles
+        self.roles = list(map(lambda x: x.upper(), roles))
         self.config = config
 
         self.current_role = None
