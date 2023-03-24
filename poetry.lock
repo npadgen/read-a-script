@@ -903,19 +903,22 @@ test = ["pexpect"]
 
 [[package]]
 name = "jupyter-core"
-version = "4.7.0"
+version = "4.11.2"
 description = "Jupyter core package. A base package on which Jupyter projects rely."
 category = "dev"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 files = [
-    {file = "jupyter_core-4.7.0-py3-none-any.whl", hash = "sha256:0a451c9b295e4db772bdd8d06f2f1eb31caeec0e81fbb77ba37d4a3024e3b315"},
-    {file = "jupyter_core-4.7.0.tar.gz", hash = "sha256:aa1f9496ab3abe72da4efe0daab0cb2233997914581f9a071e07498c6add8ed3"},
+    {file = "jupyter_core-4.11.2-py3-none-any.whl", hash = "sha256:3815e80ec5272c0c19aad087a0d2775df2852cfca8f5a17069e99c9350cecff8"},
+    {file = "jupyter_core-4.11.2.tar.gz", hash = "sha256:c2909b9bc7dca75560a6c5ae78c34fd305ede31cd864da3c0d0bb2ed89aa9337"},
 ]
 
 [package.dependencies]
-pywin32 = {version = ">=1.0", markers = "sys_platform == \"win32\""}
+pywin32 = {version = ">=1.0", markers = "sys_platform == \"win32\" and platform_python_implementation != \"PyPy\""}
 traitlets = "*"
+
+[package.extras]
+test = ["ipykernel", "pre-commit", "pytest", "pytest-cov", "pytest-timeout"]
 
 [[package]]
 name = "jupyterlab-pygments"
