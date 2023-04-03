@@ -2,6 +2,22 @@
 #
 # $Id$
 
+####################################################################
+# LEGACY - DO NOT USE!
+#
+# This is the original version of read-a-script,
+# which was completely rewritten as `read_a_script/script_learner.py`.
+# It's still here because I can't bear to let it go,
+# but it is no more; it has ceased to be; it's expired and gone
+# to meet its maker; it's hopped the twig; it's curled up its
+# tootsies; it's shuffled off this mortal coil; it's rung
+# down the curtain and joined the bleedin' choir invisibule.
+# Vis-a-vis Pythonic processes, it's had its lot.
+# All statements to the effect that this script is still a going
+# concern are from now on inoperative.
+# This is an ex-read-a-script.
+####################################################################
+
 import os
 import re
 import sys
