@@ -295,7 +295,12 @@ def interactively_get_args(scriptfile):
         args.extend(["--scene", scenes])
     print()
     print("Thank you.  Next time you could skip this introduction by just running:")
-    print("  {0} {1}".format(sys.argv[0], " ".join(args),))
+    print(
+        "  {0} {1}".format(
+            sys.argv[0],
+            " ".join(args),
+        )
+    )
     args.append(scriptfile.name)
     return args
 
