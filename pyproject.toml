@@ -16,14 +16,6 @@ pyttsx3 = "^2.90"
 [tool.poetry.dev-dependencies]
 ipython = "^8.10.0"
 jupyter = "^1.0.0"
-dephell = "^0.8.3"
-
-# Following is commented out because of a dephell error
-# you must generate setup.py with the command
-#  dephell deps convert --from-format=poetry --from-path=pyproject.toml --to-format=setuppy --to-path=setup.py
-# [tool.dephell.main]
-# from = {format = "poetry", path = "pyproject.toml"}
-# to = {format = "setuppy", path = "setup.py"}
 
 [tool.poetry.scripts]
 script_learner = "read_a_script.script_learner:main"
