@@ -3,7 +3,7 @@
 # pylint: disable=line-too-long
 
 """Usage:
-  script_learner.py [-h] [-c CONFIG_FILE] [-dqLV] -r ROLE [-r ROLE]... [-s SCENES] SCRIPT_FILE
+  script_learner.py [-h] [-c CONFIG_FILE] [-dqLV] [-r ROLE]... [-s SCENES] [-f SCRIPT_FILE]
 
 Options:
   -c CONFIG_FILE, --config CONFIG_FILE    Read additional configuration from CONFIG_FILE [default: ./config.yml]
@@ -16,7 +16,7 @@ Options:
   -s SCENES, --scenes SCENES              Scene(s) to learn [default: all]
   -L, --list-scenes                       List all the scenes and exit
   -V, --list-voices                       List all known voices and exit
-  SCRIPT_FILE                             The Fountain-formatted script file
+  -f SCRIPT_FILE, --file SCRIPT_FILE      The Fountain-formatted script file
 
 For more information about formatting SCRIPT_FILE, see http://fountain.io
 
@@ -42,6 +42,12 @@ options:
   #  SPEAK_AND_DISPLAY
   # or an integer from 1 to 4
   learning-method: PAUSE_AND_DISPLAY
+
+defaults:
+  # the default role to use (case-insensitive)
+  role: BONES
+  # the default script file to load
+  script-file: the-play-what-i-wrote.fountain
 """
 
 import enum
@@ -352,7 +358,19 @@ def main():
         # pylint: disable=W0603
         global DEFAULT_VOICE
         DEFAULT_VOICE = config["voices"][DEFAULT_CHARACTER]
-    learner = ScriptReciter(opts["SCRIPT_FILE"], opts["--role"], config)
+    role = script_file = None
+    if "defaults" in config:
+        if "role" in config["defaults"]:
+            role = config["defaults"]["role"]
+            if isinstance(role, str):
+                role = [role]
+        if "script-file" in config["defaults"]:
+            script_file = config["defaults"]["script-file"]
+    if role is None:
+        role = opts["--role"]
+    if script_file is None:
+        script_file = opts["--file"]
+    learner = ScriptReciter(script_file, role, config)
 
     if opts["--list-scenes"]:
         learner.list_scenes()
