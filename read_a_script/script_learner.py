@@ -30,7 +30,7 @@ voices:
   SPOCK: Fred
   _DEFAULT: Daniel
   _ACTION: Moira
-  
+
 options:
   # the rate at which speech will be spoken
   rate: 150
@@ -83,7 +83,6 @@ class LearningMethod(enum.Enum):
 
 
 class Actor:
-
     """
     An Actor displays lines that it is given, while reading them out in its selected voice.
     """
@@ -126,7 +125,6 @@ class Actor:
 
 
 class LearningActor(Actor):
-
     """
     A LearningActor is like an Actor, but is intended for the person using the program to learn the lines in question.
     It can work in the following ways:
@@ -282,7 +280,13 @@ class ScriptReciter:
         """
         roles = set()
         for scene in self.d.scenes:
-            roles.update(set(p.text for p in scene.paragraphs if p.type == ElementType.CHARACTER.value))
+            roles.update(
+                set(
+                    p.text
+                    for p in scene.paragraphs
+                    if p.type == ElementType.CHARACTER.value
+                )
+            )
         for role in sorted(roles):
             print(role)
 
