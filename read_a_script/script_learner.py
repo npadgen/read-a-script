@@ -3,7 +3,7 @@
 # pylint: disable=line-too-long
 
 """Usage:
-  script_learner.py [-h] [-c CONFIG_FILE] [-dqLV] [-r ROLE]... [-s SCENES] [-f SCRIPT_FILE]
+  script_learner.py [-h] [-c CONFIG_FILE] [-dqLRV] [-r ROLE]... [-s SCENES] [-f SCRIPT_FILE]
 
 Options:
   -c CONFIG_FILE, --config CONFIG_FILE    Read additional configuration from CONFIG_FILE [default: ./config.yml]
@@ -16,6 +16,7 @@ Options:
   -s SCENES, --scenes SCENES              Scene(s) to learn [default: all]
   -L, --list-scenes                       List all the scenes and exit
   -V, --list-voices                       List all known voices and exit
+  -R, --list-roles                        List all known roles and exit
   -f SCRIPT_FILE, --file SCRIPT_FILE      The Fountain-formatted script file
 
 For more information about formatting SCRIPT_FILE, see http://fountain.io
@@ -275,6 +276,16 @@ class ScriptReciter:
         for i, scene in enumerate(self.d.scenes, 1):
             print(f"{i:-8d}: {scene.header}")
 
+    def list_roles(self):
+        """
+        List all the roles in the play
+        """
+        roles = set()
+        for scene in self.d.scenes:
+            roles.update(set(p.text for p in scene.paragraphs if p.type == ElementType.CHARACTER.value))
+        for role in sorted(roles):
+            print(role)
+
     def list_voices(self):
         """
         List all the voices installed on this machine
@@ -376,6 +387,8 @@ def main():
         learner.list_scenes()
     elif opts["--list-voices"]:
         learner.list_voices()
+    elif opts["--list-roles"]:
+        learner.list_roles()
     elif opts["--scenes"] == "all":
         learner.learn()
     else:
