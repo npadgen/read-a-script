@@ -6,7 +6,7 @@ authors = ["Neil Padgen <neil.padgen@gmail.com>"]
 license = "BSD"
 
 [tool.poetry.dependencies]
-python = ">=3.14"
+python = ">=3.13"
 readchar = ">=2.0.1"
 Jouvence = ">=0.4.2"
 docopt = ">=0.6.2"

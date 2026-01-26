@@ -107,7 +107,7 @@ class Actor:
         ):
             return
         if line:
-            self.synth.say(line)
+            self.synth.say(line + (" " if line.endswith("-") else ""))
 
     def display_line(self, line, include_character=True):
         "Display a line of action without speaking it."
