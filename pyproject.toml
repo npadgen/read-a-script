@@ -21,7 +21,7 @@ ipython = ">=8.10.0"
 jupyter = ">=1.0.0"
 
 [tool.poetry.scripts]
-script_learner = "read_a_script.script_learner:main"
+script-learner = "read_a_script.script_learner:main"
 
 [build-system]
 requires = ["poetry-core"]
