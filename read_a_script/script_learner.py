@@ -107,6 +107,7 @@ class Actor:
         ):
             return
         if line:
+            # macos_speech barfs if lines end in a hyphen
             self.synth.say(re.sub("-\n", "- ", line))
 
     def display_line(self, line, include_character=True):
